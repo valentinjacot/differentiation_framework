@@ -1,0 +1,263 @@
+\documentclass[11pt, oneside]{article}   	% use "amsart" instead of "article" for AMSLaTeX format
+\usepackage{geometry}                		% See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   		% ... or a4paper or a5paper or ... 
+%\geometry{landscape}                		% Activate for rotated page geometry
+%\usepackage[parfill]{parskip}    		% Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}				% Use pdf, png, jpg, or eps§ with pdflatex; use eps in DVI mode
+								% TeX will automatically convert eps --> pdf in pdflatex		
+\usepackage{amssymb,amsmath}
+\usepackage{hyperref}
+\usepackage{doi}
+\usepackage{color}
+\usepackage{caption}
+\usepackage{subcaption}
+
+%SetFonts
+\newcommand{\vtheta}{\vec{\theta}}
+\newcommand{\grad}{\vec{\nabla}}
+\newcommand{\dd}{\,{\rm d}}
+
+
+\title{User Documentation}
+\author{Valentin Jacot-Descombes and Peter Ashcroft}
+\date{\today}							% Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+This document serves as a software documentation for a numerical platform to implement the continuous mathematical model of cell differentiation and its comparison to other types of models.   
+
+\tableofcontents
+\newpage
+
+\section{Introduction}
+The platform was developed in Python. Though it functions as a simple python framework, and can be used using an interpreter only, the framework was developed using a Jupyter notebook and IPython. This allows the user to make change on the fly, have a lot of visualisation tools, use interactive widgets and eases the use of the platform for research purposes. To solve the numerical problems the frameworks rely on the library FEniCS. \newline
+
+\section{Installation}
+The framework was developed on Mac OS 10.14.
+\subsection{Anaconda}
+"The open-source Anaconda Distribution is the easiest way to perform Python/R data science and machine learning on Linux, Windows, and Mac OS X." (source: \url{https://www.anaconda.com})\newline \newline
+To use the FEniCS library, the simplest solution is to use Anaconda's Python interpreter and install the library using miniconda. 
+\newline
+Alternatively this \href{https://klasmodin.wordpress.com/2017/09/28/fenics-using-conda/}{guide} was very useful.
+\begin{enumerate}
+\item{Install Anaconda:}\newline
+You can download the open source version from: \url{www.anaconda.com}
+\item{Install Miniconda:}\newline
+Download miniconda using this \href{https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86\_64.sh}{link} or the appropriate one from: \url{https://repo.continuum.io/miniconda}\newline
+You may need to install it using the terminal command: \texttt{sh Downloads/Miniconda3-latest-MacOSX-x8664.sh}
+\end{enumerate}
+
+\subsection{Installation of FEniCS}
+\begin{enumerate}
+\item Activate the root element: \texttt{source /miniconda3/bin/activate root}
+\item Create an environment called fenics: \texttt{conda create --name fenics}
+\item Activate the environment: \texttt{conda activate fenics}
+\item Update conda: \texttt{conda update -n base -c defaults conda}
+\item Create a link to the preferred installation channel for fenics: \texttt{echo "channels:\textbackslash{}n - conda-forge\textbackslash{}n - defaults\textbackslash{}n" > miniconda3/envs/fenics/.condarc}
+\item Install fenics, as well as other useful python packages: \texttt{conda install numpy fenics scipy matplotlib jupyter mshr}
+\item Test if the installation succeeded by running: \texttt{python -c "import fenics"}
+\end{enumerate}
+You should now be able to interpret the framework from this environment, which you can load with this command line: \texttt{source /miniconda3/bin/activate fenics}
+
+\subsection{Jupyter}
+\subsubsection{From terminal}
+Install Jupyter for Anaconda with: \texttt{conda install -c anaconda jupyter}. \newline
+The notebooks can then be launched with: \texttt{jupyter-notebook source.ipynb} \newline
+You may need to activate the fenics environment first with the command:\newline \texttt{source /miniconda3/bin/activate fenics} 
+
+\subsubsection{From Anaconda}
+From Anaconda one can launch a Jupyter Notebook. From this, we can check if the FEniCS library is available: \texttt{from python import *} \newline
+If an error occurs, try:\newline
+\texttt{!conda config -add channels conda-forge} \newline
+\texttt{!conda install fenics -y}
+
+
+\subsection{PyCharm}
+Once Fenics is installed from Anaconda, you only need to change the interpreter in PyCharm to use it. The process is similar for different IDE (See figure \ref{fig:IDE_parameters})
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{figures/IDE_parameters.png}
+\caption{ULM of the functionFactory class, implementing the factory pattern}
+\label{fig:IDE_parameters}
+\end{figure}
+
+\section{Continuous Model}
+The continuous model implement different versions of the advection diffusion equation, from different papers. 
+See: Mathematical modeling with single-cell sequencing data, (Cho \& Rockne) \cite{cho:bioRxiv:2019}.
+Let $\vtheta$ describe the location in phenotypic space, then $u(\vtheta,t)$ is the density of cells of that phenotype at time $t$.
+This cell density is modified by three terms:
+i) cell differentiation; ii) population growth; and iii) noise.
+The more general functions are in the form of:
+\begin{equation}
+\partial_t u(\vtheta,t) =
+\underbrace{-\grad \cdot \left[\vec{V}(\vtheta,t) u(\vtheta,t)\right]}_{\text{cell differentiation}} +
+\underbrace{R\bigl(\vtheta, u(\vtheta,t)\bigr)}_{\text{population growth}} +
+\underbrace{\grad \cdot \left[D(\vtheta) \grad u(\vtheta,t)\right]}_{\text{noise}},
+\label{eq1}
+\end{equation}
+with zero Dirichlet boundary conditions.
+The cell differentiation term is is split in two parts: the first is the homeostatic potential, while the second is active differentiation.
+We therefore have
+\begin{equation}
+\vec{V}(\vtheta,t) =
+- \nu \grad \left[-\log\bigl(u^*(\vtheta)\bigr)\right] +
+\vec{c}(\vtheta) \left[2\bigl(1-a(\vtheta)\bigr)r(\vtheta)\right]s_v(t),
+\end{equation}
+where $u^*(\vtheta)$ is the homeostatic cell density, $\vec{c}(\vtheta)$ is the direction and magnitude of differentiation (what fraction of differentiating cells move in a given direction), $a(\vtheta)$ is the self-renewal probability, $r(\vtheta)$ is the rate of cell division, and $s_v(t)$ is a signalling mechanism.
+\newline
+\newline
+The different Jupyter files are divided in cells, which are indexed by integers representing the following subsections. \newline
+The implementation of this chapter is the file \textit{Jupyter/Framework\_continuous\_model.ipynb}.
+
+\subsection{Imports}
+These cells hold the necessary python imports for the framework. 
+\subsection{Constants}
+These cells define global constants for the framework.
+The grid size $N$ is the dimension of the grid used by fenics to solve the PDE (Default $N = 120$).
+The grid size $M$ is the dimension of the grid used to define the matrix coefficients (Default $M = 100$).
+\subsection{Functions}
+Theses cells define global functions used to generate the artificial landscape, that simulate the homeostatic cell density.
+\subsection{Definition of a Landscape}
+These cells create an artificial landscape that simulate a homeostatic cell density. \newline
+The default landscape is made of 5 2-dimensional gaussian "wells". These are located as described in figure \ref{fig:sub1} and \ref{fig:sub2}.
+
+\begin{figure}[h]
+\centering
+\begin{minipage}{.5\textwidth}
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/landscape1.png}
+	\caption{3-dimensional landscape}
+	\label{fig:sub1}
+\end{minipage}%
+\begin{minipage}{.5\textwidth}
+	\centering
+	\includegraphics[width=0.6\textwidth]{figures/landscape2.png}
+	\caption{2-dimensional projection}
+	\label{fig:sub2}
+\end{minipage}
+\label{fig:landscape}
+\end{figure}
+In some of the more advanced frameworks, the wells with a lower $y$-position are less deep, which breaks the symmetry and allows for a better understanding of the underlying dynamics, but puts a heavy load on the performance of the solver.
+The grids $X$ and $Y$ are also defined here. 
+\subsection{Function Space and Mesh}
+In these cells the function space \^{V} and the mesh for the solver are defined.
+\subsection{Coefficients of the PDE}
+Most coefficients are extracted from a simple python 2-dimensional function. It is applied to the grid, which yields a matrix. This matrix is then given as an argument to the instance of an object \texttt{functionFactory} (see figure \ref{fig:ff} for the ULM of the class). The usage is very simple. The object is instantiated as such: \texttt{factory = functionFactory(\^{V}, N, M)}, where \^{V} is the function space, $N$ and $M$ are the respective grid sizes. The instance is global for the whole notebook, and only needs to be instantiated once (as long as the problem size does not change). The matrix is then passed to the instance as such: \texttt{newFunction = factory(matrix)}. The function is returned and can be used in the solver.
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.3\textwidth]{figures/ff.png}
+\caption{ULM of the functionFactory class, implementing the factory pattern}
+\label{fig:ff}
+\end{figure}
+
+The coefficients that are non-scalar are defined for each dimension. This is the case of the direction of the differentiation $\vec{g}$, which is defined and integrated by it $x$ and $y$ components, \texttt{v\_x} and \texttt{v\_y}.
+\subsection{PDE solver}
+The solver in this section takes an initial distribution as defined previously and the different coefficients  as functions. If the coefficient is dependent on the value of the unknown, as is the case of the reaction term, it can be updated through direct assignment at each loop iteration. 
+The solver takes a variational approach. The equation \ref{eq1} is multiplied by a test function and then integrated by parts, in order to reduce the order of differentiation. In the case of a problem with zero boundary condition this process is fairly simple. This yield a system of equations that is solved by the FEniCS solver. The choice of the time step and grid size are a little more complex, and the time dependent part of the equation has to be estimated by a Euler iterations, but this is fairly basic math. \newline
+In the framework, there is the possibility to save the solution as \texttt{.vtk} files, which can the be visualised with the open-source solver Paraview. The corresponding code lines are commented out. These files can be surprisingly large, especially if the number of steps is large. 
+\subsection{Selection Tool}
+A simple selection tool is used to define an area. The coordinates of the area can be used to extract data from the solution, e.g. integrate the solution over this area. 
+
+
+\section{Continuous to Discrete}
+The calculation of the different coefficients for the discrete approximation of the differentiation problem is done by defining and applying bins on the solution of the continuous problem. These can be easily made by using the Bin class described in the next section. Many examples are provided in the file \textit{Framework\_Continuous\_to\_discrete.ipynb}. The coefficients extracted from the bins can then be used in the linear ordinary differential equations, and thus be compared to the results of the continuous method.
+\subsection{Bin class}
+\texttt{class bin(x,y,rad,n,state)}
+\newline
+This class builds an object that represents a square mesh around the coordinate \texttt{(x,y)} (the center of the mesh) and of side length $2*r$ and consisting of $2*n$ triangles. This helps to calculate the needed parameters for the next steps. 
+\newline
+The inner state of the object Bin can be set to 'c' and the integration will be performed on a circle mesh based on the coordinate \texttt{(x,y)} (the center of the mesh) and of radius $r$ and consisting of $2*n$ triangles.
+\newline
+Remark: the circle shape is less precise, but with a higher number of degree of freedom, the correctness stands
+\newline
+The ULM diagram of this class are depicted in the figure \ref{fig:ulmbin}. Example of the instantiation of the class: \texttt{Bin1 = Bin(0.2, 0.5, 0.1, 100, 'S')}.
+\newline
+The methods of this class are the following:
+\begin{enumerate}
+\item{\texttt{integrate(u)}}: integrates a function \texttt{u} over the mesh covering the instance of the bin, and returns the value of the integral. Example: \texttt{u1 = Bin1.integrate(u)}.
+\item{\texttt{normedIntegral(arg, u)}}: returns the value of the integral of arg over the mesh divided by the value of the integral of the argument \texttt{u}. Useful to calculate rates.
+\item{\texttt{setState(state)}}: sets the state of the instance and hence the form of the mesh to either a square, if state is equal to \texttt{'s'} or a circle, if state is equal to \texttt{'c'}. The state pattern is used to allow the user to change the state on the fly and limit the code redundancy. By default the state is set to square.
+\item{\texttt{maxValue(u)} and \texttt{minValue(u)} }: returns the maximum and minimum values respectively of the function \texttt{u} in the bin.
+\item{\texttt{outflow(u)}}: returns the value of the outflow of the function \texttt{u} on the boundary of the bin's mesh.
+\item{\texttt{upperHalfOutflow(u)} and \texttt{lowerHalfOutflow(u)} }: returns the value of the outflow of the function \texttt{u} on the boundary of the bin's upper and lower halves of the mesh respectively.
+\end{enumerate}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.3\textwidth]{figures/BinULM.png}
+\caption{ULM of the Bin class, with the state Pattern implemented}
+\label{fig:ulmbin}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.4\textwidth]{figures/BinsLoc.png}
+\caption{Standard postition of the bins as it stands in the local }
+\label{fig:binpos}
+\end{figure}
+
+\subsection{Further test and implementations}
+In the file \textit{Jupyter/Archive/Framework\_Continuous\_to\_discrete\_noadvec.ipynb}, there are some further test and attempts to understand the problem, including the isolation of the bins in order to extract coefficients.
+
+\section{Discrete to Continuous}
+The implementation of this chapter is the file \textit{Jupyter/Framework\_Discrete\_to\_continuous.ipynb}.
+\subsection{Discrete model}
+Let $u_i$ be the number of cells of type $i$, where $i=1$ are the stem cells and $i=n_k$ for $k \in \{1,2,\dots,K\}$ are the terminally differentiated states.
+We then have parameters $r_i$ (birth rate), $d_i$ (death rate), $g_i$ (differentiation rate), and $c_{ij}$ (branching probability).
+Our discrete equations are then given by
+\begin{equation}
+\dot{u}_i =
+\underbrace{r_i u_i}_{\text{reproduction}} +
+\underbrace{\sum_j c_{ji} g_j u_j}_{\text{diff. in}} -
+\underbrace{g_i u_i}_{\text{diff. out}} -
+\underbrace{d_i u_i}_{\text{death}}.
+\end{equation}
+
+In terms of boundary conditions for the parameters we have: $c_{j1}=0 \, \forall j$ (no differentiation into stem cells); $g_{n_k}=0$ (no differentiation out of terminal states); and $r_{n_k}=0$ (no proliferation in terminal states).
+Finally, for homeostasis to occur, we require $r_1 - g_1 - d_1 = 0$.
+
+\subsection{Stationary solution}
+The stationary solution for this problem satisfies
+\begin{equation}
+0 = (r-d)u^* + \nu \nabla^2 u^* - \grad \cdot (\vec{g} u^*).
+\end{equation}
+If $u^*$ is the known stationary solution (i.e. observed distribution from data), and we know the birth and death rates $r(x,y)$ and $d(x,y)$, then we want to solve \eqref{eq:steadystate} to find $\vec{g}(x,y)$.
+Writing $\vec{F} = \vec{g}u$, we want to solve the equation
+\begin{equation}
+\grad \cdot \vec{F} = (r-d)u^* + \nu \nabla^2 u^*,
+\end{equation}
+for $\vec{F}$ and then the differentiation field is given $\vec{g} = \vec{F}/u^*$.
+If $\vec{F}$ is curl-free, then we can write it as a scalar potential $\vec{F} = \grad \phi$, and then solve Poisson's equation
+\begin{equation}
+\nabla^2 \phi = (r-d)u^* + \nu \nabla^2 u^*.
+\label{eq:phi}
+\end{equation}
+Note that the field $\vec{F}$ can only be determined up to a constant, and we need some additional information from somewhere to completely specify $g$.
+\subsection{Implementation}
+From the steady state solution we compute $\vec{g}$ from the equation \ref{eq:phi} and $\vec{g} = \vec{F}/u^*$. We can then use their vector components in the general equation of the framework to get back to the continuous solution.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.6\textwidth]{figures/grad(u).png}
+\caption{$\vec{g} = \vec{F}/u^*$}
+\label{fig:binpos}
+\end{figure}
+
+\section{Framework with biological data}
+In the folder \textit{Jupyter/WithData} there are two examples biological data integrated into the framework. The data come from  \cite{paul:Cell:2015} and  \cite{nestorowa:Blood:2016}. The method of dimension reduction is inspired by Cho \& Rockne's article \cite{cho:bioRxiv:2019}, and the Matlab code that they published. 
+The following steps are executed on the Matlab data:
+\begin{enumerate}
+\item{Diffusion map}: it is a method of dimensionality reduction.
+\item{Projection}: projects the data onto the first 10 axes
+\item{Normalisation}: normalisation of the data
+\item{Homeostasis}: computation of the Homeostasis
+\end{enumerate}
+The homeostasis is finally used in the continuous model as the homeostatic cell density (previously simulated by the landscape). 
+
+\section{Acknowledgement and links}
+The framework was developed in the context of the ETH Zürich Career Seed Grant SEED26 19-1. All the files are available at \url{https://github.com/valentinjacot/differentiation_framework}.
+
+\bibliographystyle{blue}
+\bibliography{bib}
+\end{document}
