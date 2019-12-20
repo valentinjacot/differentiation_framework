@@ -28,10 +28,10 @@ class functionFactory:
     # N: dimension to, M: dimension from
     @staticmethod
     def interpMat2(n, m, mat):
-        xx = np.arange(0, 1.0, 1 / (n + 1))
-        yy = np.arange(0, 1.0, 1 / (n + 1))
-        x = np.arange(0, 1.0, 1 / m)
-        y = np.arange(0, 1.0, 1 / m)
+        xx = np.arange(0, 1.0, 1. / (n + 1))
+        yy = np.arange(0, 1.0, 1. / (n + 1))
+        x = np.arange(0, 1.0, 1. / m)
+        y = np.arange(0, 1.0, 1. / m)
         f = interp2d(x, y, mat)
         mat = f(xx, yy)
         mat = mat.T

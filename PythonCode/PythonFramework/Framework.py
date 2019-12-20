@@ -47,10 +47,10 @@ def gaussian2d(x, y, muX, muY, sigmaX, sigmaY):
 
 # N: dimension to, M: dimension from
 def interpMat2(N, M, mat):
-    xx = np.arange(0, 1.0, 1 / (N + 1))
-    yy = np.arange(0, 1.0, 1 / (N + 1))
-    x = np.arange(0, 1.0, 1 / M)
-    y = np.arange(0, 1.0, 1 / M)
+    xx = np.arange(0, 1.0, 1. / (N + 1))
+    yy = np.arange(0, 1.0, 1. / (N + 1))
+    x = np.arange(0, 1.0, 1. / M)
+    y = np.arange(0, 1.0, 1. / M)
     f = interp2d(x, y, mat)
     mat = f(xx, yy)
     mat = mat.T
