@@ -59,8 +59,8 @@ def interpMat2(N, M, mat):
 
 
 # 4
-x = np.arange(0, 1.0, 1 / M)
-y = np.arange(0, 1.0, 1 / M)
+x = np.arange(0, 1.0, 1. / M)
+y = np.arange(0, 1.0, 1. / M)
 X, Y = np.meshgrid(x, y)
 zs = np.array(-fun(np.ravel(X), np.ravel(Y), 0.2, 0.5, 0.15)) * 2
 zs += np.array(-fun(np.ravel(X), np.ravel(Y), 0.5, 0.3, 0.1))
@@ -113,8 +113,8 @@ Vhat = FunctionSpace(mesh, 'P', 1)  # P returns Lagrangian polynomials, 1 is the
 # 6
 # fig = plt.figure()
 # ax = fig.add_subplot(111, projection='3d')
-x = np.arange(0, 1.0, 1 / M)
-y = np.arange(0, 1.0, 1 / M)
+x = np.arange(0, 1.0, 1. / M)
+y = np.arange(0, 1.0, 1. / M)
 X, Y = np.meshgrid(x, y)
 ui = np.array(fun(np.ravel(X), np.ravel(Y), 0.2, 0.5, 0.1))
 ui = (ui - min(ui)) / max(ui)
