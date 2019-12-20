@@ -14,6 +14,7 @@ from ufl import nabla_grad, nabla_div, grad
 from scipy.interpolate import interp2d
 import os
 import sys
+
 sys.path.append(os.path.realpath('..'))
 
 # 2
@@ -21,14 +22,13 @@ nu = 0.1
 cDiff = 0.0027
 dbar = 1.6925
 cS = 0.5
-N = 40*3 # Dimension of the grid
-M = 100 # Dimension of the matrices
+N = 40 * 3  # Dimension of the grid
+M = 100  # Dimension of the matrices
 xmax = 1
 tol = 1e-6
 parameters['reorder_dofs_serial'] = False
 mesh = UnitSquareMesh(N, N)  # 8X8 rectangles, each divided in 2 triangle, hence 128 cells, and 81 (9^2) vertices
 Vhat = FunctionSpace(mesh, 'P', 1)  # P returns Lagrangian polynomials, 1 is the degree of the FE
-
 
 
 # 3
@@ -44,17 +44,19 @@ def gaussian2d(x, y, muX, muY, sigmaX, sigmaY):
     return 1 / (sigmaX * sigmaY * np.sqrt(2 * np.pi)) * np.exp(
         -0.5 * (((x - muX) / sigmaX) ** 2 + ((y - muY) / sigmaY) ** 2))
 
+
 # N: dimension to, M: dimension from
 def interpMat2(N, M, mat):
-    xx = np.arange(0, 1.0, 1/(N+1))
-    yy = np.arange(0, 1.0, 1/(N+1))
-    x = np.arange(0, 1.0, 1/M)
-    y = np.arange(0, 1.0, 1/M)
-    f = interp2d(x,y,mat)
-    mat = f(xx,yy)
+    xx = np.arange(0, 1.0, 1 / (N + 1))
+    yy = np.arange(0, 1.0, 1 / (N + 1))
+    x = np.arange(0, 1.0, 1 / M)
+    y = np.arange(0, 1.0, 1 / M)
+    f = interp2d(x, y, mat)
+    mat = f(xx, yy)
     mat = mat.T
     mat = mat.reshape(np.prod(mat.shape))
     return mat
+
 
 # 4
 x = np.arange(0, 1.0, 1 / M)
@@ -67,10 +69,10 @@ zs += np.array(-fun(np.ravel(X), np.ravel(Y), 0.8, 0.3, 0.1)) * 1.3
 zs += np.array(-fun(np.ravel(X), np.ravel(Y), 0.8, 0.7, 0.1)) * 1.3
 
 print(zs)
-print((zs-min(zs))/-min(zs))
-Z = (zs-max(zs))/-min(zs)
-Z = Z.reshape(X.shape)*0.2
-Z -=0.05
+print((zs - min(zs)) / -min(zs))
+Z = (zs - max(zs)) / -min(zs)
+Z = Z.reshape(X.shape) * 0.2
+Z -= 0.05
 # fig = plt.figure()
 # ax = fig.add_subplot(111, projection='3d')
 # ax.plot_surface(X, Y, Z)
@@ -91,7 +93,7 @@ zlog = zlog.reshape(X.shape)
 # fig = plt.figure()
 # ax = fig.add_subplot(111, projection='3d')
 # ax.plot_surface(X, Y, zlog)
-zexp = np.exp(-((zs-min(zs))/-min(zs)))
+zexp = np.exp(-((zs - min(zs)) / -min(zs)))
 zexp = zexp.reshape(X.shape)
 # plt.matshow(zexp, aspect=1, cmap=plt.get_cmap('seismic'))
 # plt.title('zexp projection')
@@ -115,7 +117,7 @@ x = np.arange(0, 1.0, 1 / M)
 y = np.arange(0, 1.0, 1 / M)
 X, Y = np.meshgrid(x, y)
 ui = np.array(fun(np.ravel(X), np.ravel(Y), 0.2, 0.5, 0.1))
-ui = (ui-min(ui))/max(ui)
+ui = (ui - min(ui)) / max(ui)
 Ui = ui.reshape(X.shape)
 # Z2 = z2.reshape(X.shape)
 # ax.plot_surface(X, Y, Ui)
@@ -125,10 +127,11 @@ Ui = ui.reshape(X.shape)
 
 # 6
 from Dependencies.functionFactory import *
+
 # from makeFunction import *
 factory = functionFactory(Vhat, N, M)
 uhmst = zexp.reshape(X.shape)
-uhmst[uhmst<0.4]=1e-15
+uhmst[uhmst < 0.4] = 1e-15
 cDth = 1. / uhmst.T
 cDthFct = factory(cDth)
 # factory.plot(cDth, title='Death rate')
@@ -138,17 +141,21 @@ zlogFct = factory(zlog)
 # factory.plot(zlog, title='Homeostasis landscape')
 
 # Very basic initial conditon
-UiFct = factory(0.1*Ui.T)
+UiFct = factory(0.1 * Ui.T)
+
+
 # factory.plot(Ui.T, title='initial conditions')
 
 
 def rct(x_, y_):
-    return 1 + 2**x_
+    return 1 + 2 ** x_
 
 
 cRctMat = np.array(rct(np.ravel(X), np.ravel(Y)))
 cRctMat = cRctMat.reshape(X.shape)
 cRctFct = factory(cRctMat.T)
+
+
 # factory.plot(cRctMat.T,title='Reaction rate')
 
 def R1(u_):
@@ -157,7 +164,7 @@ def R1(u_):
     cRct = cRctFct.vector().get_local()
     temp = (cDth * uv)
     temp[temp > dbar] = dbar
-    temp = (1 - temp)*cRct
+    temp = (1 - temp) * cRct
     return temp
 
 
@@ -168,17 +175,21 @@ def v1():
 def boundary(x, on_boundary):
     return on_boundary
 
+
 # Differtiation rate
 # Needs to be 1d --> np-ravel
-def a(x_,y_):
-    return 0.5*(1 - x_/max(x_))
+def a(x_, y_):
+    return 0.5 * (1 - x_ / max(x_))
+
 
 # PT/ direction of the differentiation
 def c_k_x(x_, y_):
-    return x_**2
+    return x_ ** 2
+
 
 def c_k_y(x_, y_):
-    return 0*y_
+    return 0 * y_
+
 
 cAdvMat = np.array(a(np.ravel(X), np.ravel(Y)))
 cAdvMat = cAdvMat.reshape(X.shape)
@@ -194,22 +205,26 @@ cAFct_x = factory(cAMat_x.T)
 cAMat_y = np.array(c_k_y(np.ravel(X), np.ravel(Y)))
 cAMat_y = cAMat_y.reshape(Y.shape)
 cAFct_y = factory(cAMat_y.T)
+
+
 # factory.plot(cAMat_y.T, title='Differentiation rate y')
 
 
 def v2_x(u_):
-#     cAdv = cDthFct.vector().get_local()
+    #     cAdv = cDthFct.vector().get_local()
     cAdv = cAdvFct.vector().get_local()
     cA = cAFct_x.vector().get_local()
     cRct = cRctFct.vector().get_local()
-    return cA*(1-cAdv)*cRct
+    return cA * (1 - cAdv) * cRct
+
 
 def v2_y(u_):
-#     cAdv = cDthFct.vector().get_local()
+    #     cAdv = cDthFct.vector().get_local()
     cAdv = cAdvFct.vector().get_local()
     cA = cAFct_y.vector().get_local()
     cRct = cRctFct.vector().get_local()
-    return cA*(1-cAdv)*cRct
+    return cA * (1 - cAdv) * cRct
+
 
 # 7
 zero = Constant(0)
